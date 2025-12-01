@@ -219,10 +219,10 @@ def build_realtime_dataset(df, game_result):
         Output columns:
             realtime_fields from df
             top,jng,mid,bot,sup  from game_result
-            match_win from game_result
+            match_win(1: this team wins)
     '''
     realtime_fields = [
-        "gameid", "side", "teamname", "teamid", "gamelength", "result",
+        "gameid", "side", "datacompleteness", "teamname", "teamid", "gamelength", "result",
         "kills", "deaths", "assists", "teamkills", "teamdeaths",
         "doublekills", "triplekills", "quadrakills", "pentakills",
         "firstblood", "team_kpm", "ckpm", "firstdragon", "dragons",
@@ -272,7 +272,17 @@ def build_realtime_dataset(df, game_result):
     out = df.merge(lineup, on=["gameid", "side"], how="left")
 
     out.rename(columns={"win": "match_win"}, inplace=True)
-    return out
+    cols = [
+    "goldat25", "xpat25", "csat25",
+    "opp_goldat25", "opp_xpat25", "opp_csat25",
+    "golddiffat25", "xpdiffat25", "csdiffat25",
+    "killsat25", "assistsat25", "deathsat25",
+    "opp_killsat25", "opp_assistsat25", "opp_deathsat25"
+    ]
+    
+    mask = out['side'].eq('Red')
+    out.loc[mask, 'match_win'] = 1 - out.loc[mask, 'match_win']
+    return out[out["datacompleteness"] != "partial"].dropna(subset = cols)
 
 
 # -----------------------------------------------------------
