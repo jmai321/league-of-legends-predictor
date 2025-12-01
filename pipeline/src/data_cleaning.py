@@ -1,340 +1,315 @@
 """
-This script is the Data Cleaning module
+This script is the Data Cleaning module.
 
-This script performs the following:
-
-1. Load all raw CSVs from data_raw/.
+Steps:
+1. Load raw CSV files from data_raw/.
 2. Standardize column names.
-3. Convert datatypes to {numeric, datetime, categorical}.
-4. Validate data integrity 
-    - no duplicate (gameid, participantid) rows
-    - exactly 10 players per match
-    - side must be {blue, red}
-    - position must be {top, jng, mid, bot, sup}
-5. Build team-level dataset (one row per team per game).
-6. Build match-level dataset (one row per match).
-7. Save results into data_clean/.
+3. Split into:
+       a) player-level rows
+       b) team-level rows
+4. Build data sets
+8. Save results into data_clean/.
 
 To run:
     python data_cleaning.py
 """
+
 import pandas as pd
-import numpy as np
 import glob
 import os
 
 
 # -----------------------------------------------------------
-# 1. LOAD RAW CSVs
+# load raw csvs
 # -----------------------------------------------------------
 
 def load_raw_csvs(path="data_raw"):
-    """
-    This function loads all raw CSV files under the given folder and combines them.
+    '''
+    Load and combine all CSV files in the given folder.
 
     Parameters
     ----------
     path : str
-        Path to the folder containing the raw Oracle's Elixir CSV files.
+        folder containing CSV files
 
     Returns
     -------
     pd.DataFrame
-        A single dataframe containing all rows from every CSV file found.
-
-    Notes
-    -----
-    - *All* files ending with .csv are loaded.
-    - The function asserts that the folder is not empty.
-    """
+        combined dataframe
+    '''
     files = glob.glob(os.path.join(path, "*.csv"))
-    assert len(files) > 0, 'Empty path'
+    assert len(files) > 0, "no CSV files found"
 
-    # Concatenate all CSVs into one dataframe
-    df = pd.concat((pd.read_csv(f, low_memory=False) for f in files), ignore_index=True)
-    return df
-
-
-# -----------------------------------------------------------
-# 2. COLUMN NAME FIXING
-# -----------------------------------------------------------
-
-def standardize_columns(df):
-    """
-    This function converts all column names into lowercase snake_case.
-
-    Returns
-    -------
-    pd.DataFrame
-        The dataframe with standardized column names.
-    """
-
-    df.columns = (
-        df.columns
-        .str.lower()
-        .str.replace('[^0-9a-z]+', '_', regex=True)
-        .str.strip('_')
+    df = pd.concat(
+        [pd.read_csv(f, low_memory=False) for f in files],
+        ignore_index=True
     )
     return df
 
+
 # -----------------------------------------------------------
-# 3. DTYPE CLEANING
+# standardize column names
 # -----------------------------------------------------------
 
-def convert_dtypes(df):
-    """
-    This function converts datatypes where appropriate.
-
-    - Converts the 'date' column into datetime.
-    - Converts numeric-looking fields into numeric types.
-    - Normalizes text fields such as side, position, and champion names.
-
+def standardize_columns(df):
+    '''
+    Convert all column names to lowercase snake_case.
+    Parameters
+    ----------
+    df : pd.DataFrame
+        original dataframe to be standardized
     Returns
     -------
     pd.DataFrame
-        The dataframe with updated datatypes.
-    """
-
-    # Convert date column
-    if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"], errors="coerce")
-
-    # Numeric conversion
-    for col in df.columns:
-        if col in ["playername", "teamname", "champion", "position", "side", "league", "url", "date"]:
-            continue
-        try:
-            df[col] = pd.to_numeric(df[col])
-        except Exception:
-            # If conversion fails, leave the column as-is
-            pass
-
-
-    # Normalize strings
-    if "side" in df.columns:
-        df["side"] = df["side"].str.lower().str.strip()
-
-    if "position" in df.columns:
-        df["position"] = df["position"].str.lower().str.strip()
-
-    if "champion" in df.columns:
-        df["champion"] = (
-            df["champion"]
-            .astype(str)
-            .str.replace("’", "'", regex=False)
-            .str.strip()
-        )
-
+        dataframe with standardized column names
+    '''
+    df = df.copy()
+    df.columns = (
+        df.columns
+            .str.lower()
+            .str.replace("[^0-9a-z]+", "_", regex=True)
+            .str.strip("_")
+    )
     return df
 
-# -----------------------------------------------------------
-# 4. FILTER REAL PLAYER
-# -----------------------------------------------------------  
-def filter_real_players(df):
-    """
-    This function filters out non-player entries present in Oracle's Elixir.
-
-    A real player must:
-    - have a valid position in {top, jng, mid, bot, sup}
-    - have a valid side in {blue, red}
-    - have a non-null champion pick
-    """
-    valid_positions = {"top", "jng", "mid", "bot", "sup"}
-    valid_sides = {"blue", "red"}
-
-    df = df[df["position"].isin(valid_positions)]
-    df = df[df["side"].isin(valid_sides)]
-    df = df[df["champion"].notna()]
-    df = df[df["champion"] != ""]
-
-    return df
 
 # -----------------------------------------------------------
-# 5. INTEGRITY CHECKS
+# split into player-level and team-level rows
 # -----------------------------------------------------------
 
-def validate_integrity(df):
-    """
-    This function checks whether the dataset meets expected structural rules.
-
-    Checks include:
-    - Required columns must exist.
-    - No duplicate (gameid, participantid) rows.
-    - Each match must contain exactly 10 players.
-    - side must be one of {blue, red}.
-    - position must be one of {top, jng, mid, bot, sup}.
-
+def split_player_and_team_rows(df):
+    '''
+    Split rows into player-level and team-level rows.
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe already standardized but needs to be splitted
     Returns
     -------
-    bool
-        True if all checks pass.
-    """
-    required_cols = ["gameid", "participantid", "side", "position", "result"]
-    for col in required_cols:
-        assert col in df.columns, f"Missing required column: {col}"
+    (player_rows, team_rows)
+    '''
+    df = df.copy()
+    roles = ["top", "jng", "mid", "bot", "sup"]
 
-    # Ensure unique player rows
-    assert df[['gameid', 'participantid']].drop_duplicates().shape[0] == df.shape[0], \
-        "Duplicate (gameid, participantid) pairs found."
+    players = df[df["position"].isin(roles)].copy()
+    teams   = df[df["position"] == "team"].copy()
 
-    # Exactly 10 players per game
-    counts = df.groupby("gameid").size()
-    if not (counts == 10).all():
-        bad = counts[counts != 10]
-        raise ValueError(f"Some games do not have 10 players:\n{bad}")
-
-    # Check valid values
-    valid_sides = {"blue", "red"}
-    assert set(df["side"].dropna().unique()).issubset(valid_sides), \
-        f"Invalid sides detected: {df['side'].unique()}"
-
-    valid_positions = {"top", "jng", "mid", "bot", "sup"}
-    assert set(df["position"].dropna().unique()).issubset(valid_positions), \
-        f"Invalid positions detected: {df['position'].unique()}"
-
-    return True
+    return players, teams
 
 
 # -----------------------------------------------------------
-# 6. TEAM-LEVEL AGGREGATION
+# remove unwanted columns
 # -----------------------------------------------------------
 
-def create_team_dataset(df):
-    """
-    This function aggregates player-level rows into team-level rows.
-
-    It performs:
-    - Summation of numeric statistics per team.
-    - Selection of static information such as year, patch, and teamname.
-    - Pivoting champion picks by role (top, jng, mid, bot, sup).
-
+def clean_columns(df, drop_cols):
+    '''
+    Remove columns listed in drop_cols.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe to be processed
+    drop_cols : list
+        list of columns to be removed
+    
     Returns
     -------
     pd.DataFrame
-        A dataframe where each row represents one team in one game.
-    """
+        processed data frame
+    '''
+    
+    df = df.copy()
+    drop_cols = [c for c in drop_cols if c in df.columns]
+    return df.drop(columns=drop_cols)
 
-    numeric_cols = [
-        c for c in df.select_dtypes(include=[np.number]).columns
-        if c not in ["gameid", "teamid", "side", "result"]
+
+# -----------------------------------------------------------
+# build game_result dataset (Model A)
+# -----------------------------------------------------------
+
+def build_result_dataset(player_rows):
+    '''
+    Build game result table for each match.
+    Parameters
+    ----------
+    player_rows : pd.DataFrame
+        player dataframe (already standardized and splitted) from split_player_and_team_rows()
+    Returns
+    -------
+    pd.DataFrame
+    (player_rows, team_rows)
+        Output columns:
+            gameid
+            top_blue ... sup_blue
+            top_red  ... sup_red
+            win (1 if blue side won)
+    '''
+    if len(player_rows) == 0:
+        return pd.DataFrame()
+
+    pr = player_rows.copy()
+    pr["side"] = pr["side"].str.lower().str.strip()
+    pr["position"] = pr["position"].str.lower().str.strip()
+
+    roles = ["top", "jng", "mid", "bot", "sup"]
+    pr = pr[pr["position"].isin(roles)]
+    pr = pr.dropna(subset=["champion"])
+
+    # pivot champion picks into one row per (gameid, side)
+    lineup = (
+        pr.pivot_table(
+            index=["gameid", "side"],
+            columns="position",
+            values="champion",
+            aggfunc="first"
+        ).reset_index()
+    )
+
+    # flatten pivot columns
+    lineup.columns = [
+        c if isinstance(c, str) else c[1] for c in lineup.columns
     ]
+    lineup = lineup.dropna(subset=roles)
 
-    # Sum stats per team
-    team = df.groupby(["gameid", "teamid", "side"]).agg({
-        **{col: "sum" for col in numeric_cols if col not in ["result"]},
-        "result": "max",
-        "teamname": "first",
-        "league": "first",
-        "year": "first",
-        "patch": "first",
-        "gamelength": "first",
-    }).reset_index()
+    # split sides
+    blue = lineup[lineup["side"] == "blue"].copy()
+    red  = lineup[lineup["side"] == "red"].copy()
 
-    # Champion picks by position
-    picks = df.pivot_table(
-        index=["gameid", "teamid", "side"],
-        columns="position",
-        values="champion",
-        aggfunc="first"
-    ).reset_index()
+    merged = blue.merge(red, on="gameid", suffixes=("_blue", "_red"))
+    if merged.empty:
+        return pd.DataFrame()
 
-    # Flatten column names
-    picks.columns = [c if isinstance(c, str) else c[1] for c in picks.columns]
+    # determine winner from blue side result column
+    win_map = (
+        pr[pr["side"] == "blue"]
+        .groupby("gameid")["result"]
+        .max()
+    )
 
-    team = team.merge(picks, on=["gameid", "teamid", "side"], how="left")
+    merged["win"] = merged["gameid"].map(win_map)
+    merged = merged.dropna(subset=["win"])
+    if merged.empty:
+        return pd.DataFrame()
 
-    return team
+    merged["win"] = merged["win"].astype(int)
 
-
-# -----------------------------------------------------------
-# 7. MATCH-LEVEL DATASET
-# -----------------------------------------------------------
-
-def create_match_dataset(team_df):
-    """
-    This function converts team-level data into match-level data.
-
-    It pivots the team dataframe so each match becomes one row with:
-    - All blue side columns
-    - All red side columns
-    - Match-level outcome fields
-
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe with one row per match.
-    """
-    match = team_df.pivot(index="gameid", columns="side")
-    match.columns = [f"{c[0]}_{c[1]}" for c in match.columns]
-    return match.reset_index()
+    # remove leftover side columns
+    return clean_columns(merged, ["side_blue", "side_red"])
 
 
 # -----------------------------------------------------------
-# 8. SAVE CLEANED DATA
+# build realtime dataset (Model B)
 # -----------------------------------------------------------
 
-def save_outputs(players, teams, matches, path="data_clean"):
-    """
-    This function saves the cleaned datasets to CSV files.
+def build_realtime_dataset(df, game_result):
+    '''
+    Merge team-level real-time stats with champion lineups.
 
     Parameters
     ----------
-    players : pd.DataFrame
-        Player-level cleaned dataset.
-    teams : pd.DataFrame
-        Team-level cleaned dataset.
-    matches : pd.DataFrame
-        Match-level cleaned dataset.
-    path : str
-        Output folder where the CSV files will be written.
-    """
-    os.makedirs(path, exist_ok=True)
-    players.to_csv(os.path.join(path, "players_clean.csv"), index=False)
-    teams.to_csv(os.path.join(path, "teams_clean.csv"), index=False)
-    matches.to_csv(os.path.join(path, "matches_clean.csv"), index=False)
-    print(f"Cleaned datasets saved at {path}/")
+    df : pd.DataFrame
+        team-level rows
+
+    game_result : pd.DataFrame
+        from build_result_dataset()
+
+    Returns
+    -------
+    pd.DataFrame
+        Output columns:
+            realtime_fields from df
+            top,jng,mid,bot,sup  from game_result
+            match_win from game_result
+    '''
+    realtime_fields = [
+        "gameid", "side", "teamname", "teamid", "gamelength", "result",
+        "kills", "deaths", "assists", "teamkills", "teamdeaths",
+        "doublekills", "triplekills", "quadrakills", "pentakills",
+        "firstblood", "team_kpm", "ckpm", "firstdragon", "dragons",
+        "opp_dragons", "elementaldrakes", "opp_elementaldrakes",
+        "infernals", "mountains", "clouds", "oceans", "chemtechs",
+        "hextechs", "dragons_type_unknown", "elders", "opp_elders",
+        "firstherald", "heralds", "opp_heralds", "firstbaron", "barons",
+        "opp_barons", "firsttower", "towers", "opp_towers", "firstmidtower",
+        "firsttothreetowers", "turretplates", "opp_turretplates",
+        "inhibitors", "opp_inhibitors", "damagetochampions", "dpm",
+        "damagetakenperminute", "damagemitigatedperminute",
+        "damagetotowers", "wardsplaced", "wpm", "wardskilled", "wcpm",
+        "controlwardsbought", "visionscore", "vspm", "totalgold",
+        "earnedgold", "earned_gpm", "earnedgoldshare", "goldspent", "gspd",
+        "gpr", "minionkills", "monsterkills", "cspm", "goldat10", "xpat10",
+        "csat10", "opp_goldat10", "opp_xpat10", "opp_csat10",
+        "golddiffat10", "xpdiffat10", "csdiffat10", "killsat10",
+        "assistsat10", "deathsat10", "opp_killsat10", "opp_assistsat10",
+        "opp_deathsat10", "goldat15", "xpat15", "csat15", "opp_goldat15",
+        "opp_xpat15", "opp_csat15", "golddiffat15", "xpdiffat15",
+        "csdiffat15", "killsat15", "assistsat15", "deathsat15",
+        "opp_killsat15", "opp_assistsat15", "opp_deathsat15", "goldat20",
+        "xpat20", "csat20", "opp_goldat20", "opp_xpat20", "opp_csat20",
+        "golddiffat20", "xpdiffat20", "csdiffat20", "killsat20",
+        "assistsat20", "deathsat20", "opp_killsat20", "opp_assistsat20",
+        "opp_deathsat20", "goldat25", "xpat25", "csat25", "opp_goldat25",
+        "opp_xpat25", "opp_csat25", "golddiffat25", "xpdiffat25",
+        "csdiffat25", "killsat25", "assistsat25", "deathsat25",
+        "opp_killsat25", "opp_assistsat25", "opp_deathsat25"
+    ]
+
+    df = df[realtime_fields].copy()
+    roles = ["top", "jng", "mid", "bot", "sup"]
+
+    # build blue rows
+    blue = game_result[["gameid", "win"] + [f"{r}_blue" for r in roles]].copy()
+    blue.rename(columns={f"{r}_blue": r for r in roles}, inplace=True)
+    blue["side"] = "Blue"
+
+    # build red rows
+    red = game_result[["gameid", "win"] + [f"{r}_red" for r in roles]].copy()
+    red.rename(columns={f"{r}_red": r for r in roles}, inplace=True)
+    red["side"] = "Red"
+
+    lineup = pd.concat([blue, red], ignore_index=True)
+
+    out = df.merge(lineup, on=["gameid", "side"], how="left")
+
+    out.rename(columns={"win": "match_win"}, inplace=True)
+    return out
+
 
 # -----------------------------------------------------------
-# MAIN ENTRY POINT
+# save output files
+# -----------------------------------------------------------
+
+def save_outputs(game_result, realtime, path="data_clean"):
+    '''Save cleaned datasets to disk.'''
+    os.makedirs(path, exist_ok=True)
+
+    game_result.to_csv(os.path.join(path, "game_result.csv"), index=False)
+    realtime.to_csv(os.path.join(path, "realtime.csv"), index=False)
+
+
+# -----------------------------------------------------------
+# main
 # -----------------------------------------------------------
 
 def main():
-    """
-    This function runs the full data cleaning pipeline from start to finish.
 
-    Steps:
-    - load raw CSV files
-    - standardize columns
-    - convert datatypes
-    - validate dataset structure
-    - build team and match datasets
-    - save all cleaned CSV files
-    """
-    print("Loading raw CSVs...")
-    df = load_raw_csvs()
+    print("loading csvs...")
+    df_raw = load_raw_csvs()
 
-    print("Standardizing columns...")
-    df = standardize_columns(df)
+    print("standardizing columns...")
+    df = standardize_columns(df_raw)
 
-    print("Converting datatypes...")
-    df = convert_dtypes(df)
+    print("splitting rows...")
+    players, teams = split_player_and_team_rows(df)
 
-    print("Filtering to real player rows...")
-    df = filter_real_players(df)
+    print("building game_result...")
+    game_result = build_result_dataset(players)
 
-    print("Running integrity checks...")
-    validate_integrity(df)
+    print("building realtime dataset...")
+    realtime = build_realtime_dataset(teams, game_result)
 
-    print("Building team-level dataset...")
-    team_df = create_team_dataset(df)
-
-    print("Building match-level dataset...")
-    match_df = create_match_dataset(team_df)
-
-    print("Saving outputs...")
-    save_outputs(df, team_df, match_df)
-
-    print("Done.")
+    print("saving outputs...")
+    save_outputs(game_result, realtime)
 
 
 if __name__ == "__main__":
