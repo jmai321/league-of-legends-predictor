@@ -1,8 +1,28 @@
+"use client";
+
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/src/components/Navigation";
+import { ChampionSelector } from "@/src/components/ChampionSelector";
+import { ROLE_LABELS } from "@/src/constants/champions";
 
 export default function DraftPredictionPage() {
+  const [redTeam, setRedTeam] = useState<string[]>(Array(5).fill(""));
+  const [blueTeam, setBlueTeam] = useState<string[]>(Array(5).fill(""));
+
+  const updateRedChampion = (index: number, champion: string) => {
+    const newRedTeam = [...redTeam];
+    newRedTeam[index] = champion;
+    setRedTeam(newRedTeam);
+  };
+
+  const updateBlueChampion = (index: number, champion: string) => {
+    const newBlueTeam = [...blueTeam];
+    newBlueTeam[index] = champion;
+    setBlueTeam(newBlueTeam);
+  };
+
   return (
     <div className="min-h-screen bg-background relative">
       <Navigation />
@@ -22,22 +42,28 @@ export default function DraftPredictionPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 {/* Red Team */}
-                <div className="space-y-4">
+                <div className="space-y-4 flex flex-col items-center">
                   <h3 className="text-lg font-medium text-red-600 text-center">Red</h3>
                   {Array.from({ length: 5 }, (_, i) => (
-                    <div key={`red-${i}`} className="p-3 border rounded text-center bg-red-50">
-                      champ{i + 1}
-                    </div>
+                    <ChampionSelector
+                      key={`red-${i}`}
+                      value={redTeam[i]}
+                      onChange={(champion) => updateRedChampion(i, champion)}
+                      placeholder={ROLE_LABELS[i]}
+                    />
                   ))}
                 </div>
                 
                 {/* Blue Team */}
-                <div className="space-y-4">
+                <div className="space-y-4 flex flex-col items-center">
                   <h3 className="text-lg font-medium text-blue-600 text-center">Blue</h3>
                   {Array.from({ length: 5 }, (_, i) => (
-                    <div key={`blue-${i}`} className="p-3 border rounded text-center bg-blue-50">
-                      champ{i + 1}
-                    </div>
+                    <ChampionSelector
+                      key={`blue-${i}`}
+                      value={blueTeam[i]}
+                      onChange={(champion) => updateBlueChampion(i, champion)}
+                      placeholder={ROLE_LABELS[i]}
+                    />
                   ))}
                 </div>
               </div>
