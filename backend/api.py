@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import joblib
-import xgboost as xgb  # 用于构造 DMatrix + pred_contribs
+import xgboost as xgb
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
@@ -47,7 +47,7 @@ class RealtimeRow(BaseModel):
     teamname: Optional[str] = None
 
     class Config:
-        extra = "allow"  # allow arbitrary other fields (gold, kills, etc.)
+        extra = "allow"  # allow arbitrary additional fields (gold, kills, etc.)
 
 
 class RealtimeGame(BaseModel):
@@ -65,7 +65,7 @@ class RealtimeGame(BaseModel):
 # Utility functions
 # =========================
 def logit(p: float) -> float:
-    """Numerically-stable logit."""
+    """Numerically-stable logit function."""
     eps = 1e-6
     p = np.clip(p, eps, 1 - eps)
     return float(np.log(p / (1 - p)))
@@ -97,17 +97,14 @@ def get_xgb_contribs_single(
     Compute per-input feature contributions (SHAP values) for a single row
     using XGBoost Booster + DMatrix with pred_contribs=True.
 
-    如果模型不是 XGBoost（没有 get_booster），会返回 [] 安全退化。
+    If the model is not XGBoost (missing get_booster), this safely returns [].
     """
-    # 只保留一行
     if X_row.shape[0] != 1:
         X_row = X_row.iloc[[0]]
 
-    # 不是 XGBoost 的话直接空
     if not hasattr(model, "get_booster"):
         return []
 
-    # 按 feature_cols 顺序取列，避免列顺序错乱
     X_used = X_row[feature_cols].copy()
     for c in X_used.columns:
         X_used[c] = pd.to_numeric(X_used[c], errors="coerce")
@@ -120,7 +117,6 @@ def get_xgb_contribs_single(
     except Exception:
         return []
 
-    # XGBoost 返回 N+1（最后一列为 bias）
     if len(contribs_all) == len(feature_cols) + 1:
         contribs = contribs_all[:-1]
     else:
@@ -143,7 +139,7 @@ def get_xgb_contribs_single(
 # =========================
 # Load models
 # =========================
-# 注意：这里用的是你改后的文件名（不带 xgb）
+# Note: These use your modified model names (without "xgb"):
 #   - model/lineup_model.joblib
 #   - model/realtime_model.joblib
 #   - model/realtime_mid10_model.joblib
@@ -172,9 +168,10 @@ lineup_categorical_cols = [
 
 
 def _get_lineup_inner_model_and_onehot():
-    """内部工具：从 pipeline 中取出 onehot 和 tree 模型。"""
+    """Internal helper: extract onehot encoder and the tree model from the pipeline."""
     onehot = lineup_pipeline.named_steps.get("onehot")
-    # 模型这一步的名字不一定叫 xgb，所以先尝试 xgb，再 fallback 任意非 onehot 的 step
+
+    # The model step name may not always be "xgb"; fallback to any non-onehot step
     model = lineup_pipeline.named_steps.get("xgb", None)
     if model is None:
         for name, step in lineup_pipeline.named_steps.items():
@@ -185,7 +182,7 @@ def _get_lineup_inner_model_and_onehot():
 
 
 def get_lineup_top_features(top_n: int = 10) -> List[Dict[str, Any]]:
-    """全局特征重要性（针对 one-hot 后的 champion 组合）。"""
+    """Global feature importance for one-hot encoded champion combinations."""
     onehot, model = _get_lineup_inner_model_and_onehot()
     if onehot is None or model is None:
         return []
@@ -198,7 +195,8 @@ def get_lineup_contribs_for_input(
     item_dict: Dict[str, Any], top_n: int = 10
 ) -> List[Dict[str, Any]]:
     """
-    计算单局阵容的 per-input 特征贡献（SHAP-like），在 one-hot 空间下。
+    Compute per-input feature contributions (SHAP-like) for a single lineup,
+    in one-hot encoded space.
     """
     df = pd.DataFrame([item_dict], columns=lineup_categorical_cols)
     onehot, model = _get_lineup_inner_model_and_onehot()
@@ -208,7 +206,6 @@ def get_lineup_contribs_for_input(
     X_ohe = onehot.transform(df)
     feature_names = list(onehot.get_feature_names_out(lineup_categorical_cols))
 
-    # X_ohe 是 sparse，DMatrix 可以直接吃
     dmatrix = xgb.DMatrix(X_ohe, feature_names=feature_names)
     booster = model.get_booster()
     try:
@@ -243,7 +240,7 @@ realtime_full_payload = joblib.load(realtime_full_path)
 realtime_full_model = realtime_full_payload["model"]
 realtime_full_feature_cols: List[str] = realtime_full_payload["feature_cols"]
 
-# Mid-game models: 10 / 15 / 20 / 25
+# Mid-game models for minutes 10 / 15 / 20 / 25
 mid_models: Dict[int, Dict[str, Any]] = {}
 for minute in [10, 15, 20, 25]:
     mid_path = os.path.join(DATA_PATH, f"realtime_mid{minute}_model.joblib")
@@ -269,12 +266,12 @@ def predict_lineup(
     req: Union[LineupItem, List[LineupItem]]
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
-    选人阶段胜率预测。
+    Champion select (draft) winrate prediction.
 
-    返回：
+    Returns:
     - p_blue, p_red
-    - top_features：全局 feature_importances
-    - feature_contribs：当前这局阵容在 one-hot 空间的 per-input 贡献
+    - top_features: global feature importances
+    - feature_contribs: per-input one-hot feature contributions
     """
     if isinstance(req, LineupItem):
         items = [req]
@@ -308,14 +305,14 @@ def predict_lineup(
 
 
 # =========================
-# Full-game realtime prediction: single or batch
+# Full-game realtime prediction
 # =========================
 @app.post("/predict/realtime/full")
 def predict_realtime_full(
     req: Union[RealtimeGame, List[RealtimeGame]]
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
-    全局经济 / 数据结束后的胜率预测。
+    Predict winrate using full-game economic/statistical data.
     """
     if isinstance(req, RealtimeGame):
         games = [req]
@@ -347,7 +344,7 @@ def predict_realtime_full(
         blue_team = df_raw[df_raw["side"] == "Blue"]["teamname"].iloc[0]
         red_team = df_raw[df_raw["side"] == "Red"]["teamname"].iloc[0]
 
-        # 特征对齐
+        # Feature alignment
         df_feat = df_raw.copy()
         df_feat["side"] = df_feat["side"].map({"Blue": 0, "Red": 1})
 
@@ -387,11 +384,11 @@ def predict_realtime_full(
         X_blue = df_feat.loc[[blue_idx]]
         X_red = df_feat.loc[[red_idx]]
 
-        # raw prob
+        # raw probability
         p_blue_raw = float(realtime_full_model.predict_proba(X_blue)[:, 1][0])
         p_red_raw = float(realtime_full_model.predict_proba(X_red)[:, 1][0])
 
-        # logit + softmax 归一化
+        # logit + softmax normalization
         l_blue = logit(p_blue_raw)
         l_red = logit(p_red_raw)
         exp_blue = np.exp(l_blue)
@@ -399,12 +396,12 @@ def predict_realtime_full(
         p_blue_norm = float(exp_blue / (exp_blue + exp_red))
         p_red_norm = float(exp_red / (exp_blue + exp_red))
 
-        # 全局重要性
+        # global importance
         top_feats = get_tree_top_features(
             realtime_full_model, realtime_full_feature_cols, top_n=15
         )
 
-        # per-input 贡献
+        # per-input contributions
         contribs_blue = get_xgb_contribs_single(
             realtime_full_model, X_blue, realtime_full_feature_cols, top_n=15
         )
@@ -431,14 +428,14 @@ def predict_realtime_full(
 
 
 # =========================
-# Mid-game realtime prediction: single or batch
+# Mid-game realtime prediction
 # =========================
 @app.post("/predict/realtime/mid/{minute}")
 def predict_realtime_mid(
     minute: int, req: Union[RealtimeGame, List[RealtimeGame]]
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
-    T 分钟时（10/15/20/25）根据局势预测胜率。
+    Predict winrate at time T (10/15/20/25 minutes).
     """
     if minute not in mid_models:
         raise HTTPException(
@@ -480,7 +477,7 @@ def predict_realtime_mid(
         blue_team = df_raw[df_raw["side"] == "Blue"]["teamname"].iloc[0]
         red_team = df_raw[df_raw["side"] == "Red"]["teamname"].iloc[0]
 
-        # 根据请求里的列找 atT 字段（用于检查）
+        # Look for columns containing at{minute} (for validation)
         mid_cols_req = [c for c in df_raw.columns if f"at{minute}" in c]
         if not mid_cols_req:
             raise HTTPException(
@@ -488,7 +485,7 @@ def predict_realtime_mid(
                 detail=f"No mid-game columns containing 'at{minute}' were found in request.",
             )
 
-        # side + 所有 mid 特征列
+        # side + all mid-game features
         df_mid = df_raw[["side"] + mid_cols_req].copy()
         df_mid["side"] = df_mid["side"].map({"Blue": 0, "Red": 1})
 
@@ -496,13 +493,15 @@ def predict_realtime_mid(
             df_mid[col] = pd.to_numeric(df_mid[col], errors="coerce")
         df_mid = df_mid.fillna(0.0)
 
-        # 对齐训练特征
+        # Align with training features
         for c in feature_cols:
             if c not in df_mid.columns:
                 df_mid[c] = 0.0
+
         extra_cols = [c for c in df_mid.columns if c not in feature_cols]
         if extra_cols:
             df_mid = df_mid.drop(columns=extra_cols)
+
         df_mid = df_mid[feature_cols]
 
         blue_idx = df_raw[df_raw["side"] == "Blue"].index[0]
@@ -511,7 +510,7 @@ def predict_realtime_mid(
         X_blue = df_mid.loc[[blue_idx]]
         X_red = df_mid.loc[[red_idx]]
 
-        # raw prob
+        # raw probability
         p_blue_raw = float(model.predict_proba(X_blue)[:, 1][0])
         p_red_raw = float(model.predict_proba(X_red)[:, 1][0])
 
@@ -522,10 +521,10 @@ def predict_realtime_mid(
         p_blue_norm = float(exp_blue / (exp_blue + exp_red))
         p_red_norm = float(exp_red / (exp_blue + exp_red))
 
-        # 全局重要性
+        # global importance
         top_feats = get_tree_top_features(model, feature_cols, top_n=15)
 
-        # per-input 贡献
+        # per-input contributions
         contribs_blue = get_xgb_contribs_single(
             model, X_blue, feature_cols, top_n=15
         )
