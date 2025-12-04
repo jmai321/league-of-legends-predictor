@@ -1,4 +1,4 @@
-# LOL Match Prediction API
+# LOL Match Prediction API – Frontend Guide
 
 This project provides machine-learning–based win predictions for **League of Legends** matches.  
 Frontend developers can use this API to display:
@@ -11,7 +11,7 @@ Frontend developers can use this API to display:
 
 ---
 
-## 🚀 Start the API
+## Start the API
 
 ```bash
 uvicorn api:app --reload
@@ -25,7 +25,7 @@ http://127.0.0.1:8000/docs
 
 ---
 
-## 📌 Available Endpoints
+## Available Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
@@ -44,7 +44,7 @@ All endpoints return:
 
 ---
 
-# 🎮 1. Pick Phase Prediction  
+# 1. Pick Phase Prediction  
 ### `POST /predict/lineup`
 
 ### Example Request
@@ -75,7 +75,7 @@ All endpoints return:
 
 ---
 
-# 🔥 2. Mid-Game Prediction  
+# 2. Mid-Game Prediction  
 ### `POST /predict/realtime/mid/{minute}`  
 Supports: **10, 15, 20, 25**
 
@@ -126,7 +126,7 @@ Supports: **10, 15, 20, 25**
 
 ---
 
-# 🏆 3. Full-Game Prediction  
+# 3. Full-Game Prediction  
 ### `POST /predict/realtime/full`
 
 ### Example Request
@@ -165,42 +165,3 @@ Supports: **10, 15, 20, 25**
   "feature_contribs_red": [...]
 }
 ```
-
----
-
-# 📊 How to Use in Frontend
-
-- Use `p_blue` / `p_blue_norm` as the displayed win rate.
-- Use `feature_contribs` to draw bar charts:
-  - Positive value → favors blue side
-  - Negative value → favors red side
-- Show the top 5–10 features for clarity.
-
----
-
-# 🧪 Test Script
-
-Run all tests:
-
-```bash
-python test.py
-```
-
-Output will be written to:
-
-```
-test_results.txt
-```
-
----
-
-# 📎 Notes
-
-- Pick-phase features are high-dimensional (one-hot). Only show top contributions.
-- Mid-game & full-game features are numeric and easy to visualize.
-- Probabilities are normalized (blue + red = 1).
-
----
-
-# ✔ Done
-The API is ready for integration with any frontend framework.
