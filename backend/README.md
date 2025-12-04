@@ -1,4 +1,4 @@
-# LOL Match Prediction API – Frontend Guide
+# LOL Match Prediction API
 
 This project provides machine-learning–based win predictions for **League of Legends** matches.  
 Frontend developers can use this API to display:
