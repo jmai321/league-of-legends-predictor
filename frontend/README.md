@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
-
-First, run the development server:
-
+## Setup
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How to Run
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## File Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+frontend/
+├── app/                    # Next.js app directory
+│   ├── draft/
+│   │   └── page.tsx        # Champion draft prediction page
+│   ├── live/
+│   │   └── page.tsx        # Live game prediction page
+│   ├── globals.css         # Global styles
+│   ├── layout.tsx          # Root layout
+│   └── page.tsx            # Home page
+├── api/
+│   ├── client.ts           # API client base
+│   ├── draft.ts            # Draft prediction API
+│   ├── live.ts             # Live prediction API
+│   └── index.ts            # API exports
+├── components/
+│   ├── ui/                 # Shadcn UI components
+│   ├── layout/
+│   │   └── PageLayout.tsx  # Common page layout
+│   ├── ChampionSelector.tsx
+│   ├── ModelSelector.tsx
+│   └── TeamStatsForm.tsx
+├── constants/
+│   ├── champions.ts        # Champion data
+│   └── gameStats.ts        # Game statistics config
+├── lib/
+│   ├── transformers.ts     # Data transformers
+│   └── utils.ts            # Utility functions
+├── types/
+│   └── index.ts            # TypeScript definitions
+├── components.json         # Shadcn config
+├── next.config.js          # Next.js config
+├── package.json            # Dependencies
+├── tailwind.config.ts      # Tailwind config
+└── tsconfig.json           # TypeScript config
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
