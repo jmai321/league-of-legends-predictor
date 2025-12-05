@@ -1,2 +1,4 @@
 *.csv
 *.pyc
+data_raw/
+data_clean/
