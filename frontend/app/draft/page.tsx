@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Navigation } from "@/src/components/Navigation";
-import { ChampionSelector } from "@/src/components/ChampionSelector";
-import { ROLE_LABELS } from "@/src/constants/champions";
-import { predictLineup, ApiError } from "@/src/api";
-import { transformDraftToLineup } from "@/src/lib/transformers";
-import type { DraftTeams, LineupResponse } from "@/src/types";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { ChampionSelector } from "@/components/ChampionSelector";
+import { ROLE_LABELS } from "@/constants/champions";
+import { predictLineup, ApiError } from "@/api";
+import { transformDraftToLineup } from "@/lib/transformers";
+import type { DraftTeams, LineupResponse } from "@/types";
 
 export default function DraftPredictionPage() {
-  const [redTeam, setRedTeam] = useState<string[]>(Array(5).fill(""));
-  const [blueTeam, setBlueTeam] = useState<string[]>(Array(5).fill(""));
+  const [redTeam, setRedTeam] = useState<string[]>(["Sion", "Lee Sin", "Ahri", "Aphelios", "Braum"]);
+  const [blueTeam, setBlueTeam] = useState<string[]>(["K'Sante", "Maokai", "Tristana", "Jinx", "Lulu"]);
   const [isLoading, setIsLoading] = useState(false);
   const [prediction, setPrediction] = useState<LineupResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,17 +56,8 @@ export default function DraftPredictionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            Draft Prediction
-          </h1>
-        </div>
-        
-        <Card className="max-w-6xl mx-auto p-6">
+    <PageLayout title="Draft Prediction">
+      <Card className="max-w-6xl mx-auto p-6">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Left side - Draft */}
             <div className="space-y-6 h-full">
@@ -165,8 +156,7 @@ export default function DraftPredictionPage() {
               </Card>
             </div>
           </div>
-        </Card>
-      </div>
-    </div>
+      </Card>
+    </PageLayout>
   );
 }

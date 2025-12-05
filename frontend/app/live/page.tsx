@@ -4,17 +4,17 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Navigation } from "@/src/components/Navigation";
-import { TeamStatsForm } from "@/src/components/TeamStatsForm";
-import { ModelSelector } from "@/src/components/ModelSelector";
-import { predictLive, ApiError } from "@/src/api";
-import { transformToRealtimeGame } from "@/src/lib/transformers";
-import type { TeamStats, PredictionModel, LiveResponse } from "@/src/types";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { TeamStatsForm } from "@/components/TeamStatsForm";
+import { ModelSelector } from "@/components/ModelSelector";
+import { predictLive, ApiError } from "@/api";
+import { transformToRealtimeGame } from "@/lib/transformers";
+import type { TeamStats, PredictionModel, LiveResponse } from "@/types";
 
 export default function LivePredictionPage() {
   const [model, setModel] = useState<PredictionModel>("15");
-  const [blueStats, setBlueStats] = useState<TeamStats>({ teamname: "" });
-  const [redStats, setRedStats] = useState<TeamStats>({ teamname: "" });
+  const [blueStats, setBlueStats] = useState<TeamStats>({ teamname: "Gen.G" });
+  const [redStats, setRedStats] = useState<TeamStats>({ teamname: "T1" });
   const [isLoading, setIsLoading] = useState(false);
   const [prediction, setPrediction] = useState<LiveResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,9 @@ export default function LivePredictionPage() {
   };
 
   const isFormValid = () => {
-    return blueStats.teamname.trim() !== "" && redStats.teamname.trim() !== "";
+    const blueTeamName = typeof blueStats.teamname === "string" ? blueStats.teamname : "T1";
+    const redTeamName = typeof redStats.teamname === "string" ? redStats.teamname : "Gen.G";
+    return blueTeamName.trim() !== "" && redTeamName.trim() !== "";
   };
 
   const renderResults = () => {
@@ -89,7 +91,7 @@ export default function LivePredictionPage() {
           </TabsList>
 
           <TabsContent value="top-features" className="mt-4">
-            <div className="h-48 overflow-y-auto overflow-y-scroll" style={{ scrollbarWidth: 'thin' }}>
+            <div className="h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
               <div className="space-y-1 text-sm pr-2">
                 {prediction.top_features.map((feature, i) => (
                   <div key={i} className="flex justify-between">
@@ -102,7 +104,7 @@ export default function LivePredictionPage() {
           </TabsContent>
 
           <TabsContent value="blue-impact" className="mt-4">
-            <div className="h-48 overflow-y-auto overflow-y-scroll" style={{ scrollbarWidth: 'thin' }}>
+            <div className="h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
               <div className="space-y-1 text-sm pr-2">
                 {prediction.feature_contribs_blue.map((contrib, i) => (
                   <div key={i} className="flex justify-between">
@@ -117,7 +119,7 @@ export default function LivePredictionPage() {
           </TabsContent>
 
           <TabsContent value="red-impact" className="mt-4">
-            <div className="h-48 overflow-y-auto overflow-y-scroll" style={{ scrollbarWidth: 'thin' }}>
+            <div className="h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
               <div className="space-y-1 text-sm pr-2">
                 {prediction.feature_contribs_red.map((contrib, i) => (
                   <div key={i} className="flex justify-between">
@@ -136,17 +138,8 @@ export default function LivePredictionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            Live Game Prediction
-          </h1>
-        </div>
-        
-        <Card className="max-w-6xl mx-auto p-6">
+    <PageLayout title="Live Game Prediction">
+      <Card className="max-w-6xl mx-auto p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="statistics">Team Statistics</TabsTrigger>
@@ -197,8 +190,7 @@ export default function LivePredictionPage() {
               </div>
             </TabsContent>
           </Tabs>
-        </Card>
-      </div>
-    </div>
+      </Card>
+    </PageLayout>
   );
 }

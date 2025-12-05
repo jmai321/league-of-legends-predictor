@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { CHAMPIONS } from '@/src/constants/champions';
+import { CHAMPIONS } from '@/constants/champions';
 
 interface ChampionSelectorProps {
   value?: string;

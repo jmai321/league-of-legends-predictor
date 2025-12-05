@@ -1,5 +1,5 @@
-import type { DraftTeams, LineupRequest, TeamStats, RealtimeGame, PredictionModel } from "@/src/types";
-import { getFieldsForModel } from "@/src/constants/gameStats";
+import type { DraftTeams, LineupRequest, TeamStats, RealtimeGame, RealtimeRow, PredictionModel } from "@/types";
+import { getFieldsForModel, getDefaultValue } from "@/constants/gameStats";
 
 export function transformDraftToLineup(teams: DraftTeams): LineupRequest {
   return {
@@ -24,17 +24,18 @@ export function transformToRealtimeGame(
 ): RealtimeGame {
   const fields = getFieldsForModel(model);
   
-  const buildRow = (stats: TeamStats, side: "Blue" | "Red") => {
-    const row: Record<string, any> = {
+  const buildRow = (stats: TeamStats, side: "Blue" | "Red"): RealtimeRow => {
+    const row: RealtimeRow = {
       gameid: gameId,
       side,
-      teamname: stats.teamname || "",
+      teamname: String(stats.teamname || ""),
     };
     
     for (const field of fields) {
       if (field.key !== "teamname") {
         const value = stats[field.key];
-        row[field.key] = value !== undefined ? value : field.defaultValue;
+        const fieldValue = value !== undefined ? value : getDefaultValue(field, side);
+        row[field.key] = typeof fieldValue === 'boolean' ? (fieldValue ? 1 : 0) : fieldValue;
       }
     }
     

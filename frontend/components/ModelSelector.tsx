@@ -2,8 +2,8 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { PREDICTION_MODELS } from "@/src/constants/gameStats";
-import type { PredictionModel } from "@/src/types";
+import { PREDICTION_MODELS } from "@/constants/gameStats";
+import type { PredictionModel } from "@/types";
 
 interface ModelSelectorProps {
   value: PredictionModel;

@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import type { RealtimeGame, LiveResponse, PredictionModel } from "@/src/types";
+import type { RealtimeGame, LiveResponse, PredictionModel } from "@/types";
 
 export async function predictLive(
   request: RealtimeGame,
