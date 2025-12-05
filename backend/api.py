@@ -192,6 +192,32 @@ def get_lineup_top_features(top_n: int = 10) -> List[Dict[str, Any]]:
     return get_tree_top_features(model, feature_names, top_n=top_n)
 
 
+def get_lineup_top_features_filtered(item_dict: Dict[str, Any], top_n: int = 10) -> List[Dict[str, Any]]:
+    """Get top features that are actually active in this specific lineup."""
+    onehot, model = _get_lineup_inner_model_and_onehot()
+    if onehot is None or model is None:
+        return []
+    
+    # Get all feature names
+    feature_names = list(onehot.get_feature_names_out(lineup_categorical_cols))
+    
+    # Find which features are active (1.0) for this input
+    df = pd.DataFrame([item_dict])
+    X_ohe = onehot.transform(df)
+    active_indices = X_ohe.nonzero()[1]  # Get indices where value = 1.0
+    
+    # Get importance only for active features
+    importances = model.feature_importances_[active_indices]
+    active_features = [feature_names[i] for i in active_indices]
+    
+    df_filtered = pd.DataFrame({
+        'feature': active_features, 
+        'importance': importances
+    }).sort_values('importance', ascending=False)
+    
+    return df_filtered.head(top_n).to_dict(orient="records")
+
+
 def get_lineup_contribs_for_input(
     item_dict: Dict[str, Any], top_n: int = 10
 ) -> List[Dict[str, Any]]:
@@ -293,19 +319,19 @@ def predict_lineup(
     df = pd.DataFrame(data, columns=lineup_categorical_cols)
 
     proba = lineup_pipeline.predict_proba(df)[:, 1]
-    top_feats_global = get_lineup_top_features(top_n=15)
 
     results: List[Dict[str, Any]] = []
     for row_dict, p in zip(data, proba):
         p_blue = float(p)
         p_red = 1.0 - p_blue
+        top_feats_filtered = get_lineup_top_features_filtered(row_dict, top_n=15)
         per_input_contribs = get_lineup_contribs_for_input(row_dict, top_n=15)
 
         results.append(
             {
                 "p_blue": p_blue,
                 "p_red": p_red,
-                "top_features": top_feats_global,
+                "top_features": top_feats_filtered,
                 "feature_contribs": per_input_contribs,
             }
         )
