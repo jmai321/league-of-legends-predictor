@@ -4,14 +4,34 @@ Predict the outcome of professional League of Legends matches using machine lear
 
 ## Setup
 
-### Frontend
+### Docker
+
+**Requirements:** Only Docker Desktop needs to be installed.
+
+The easiest way to run the entire application:
+
+```bash
+git clone [repository-url]
+cd league-of-legends-predictor
+docker-compose up --build
+```
+
+Then visit http://localhost:3000 to use the application.
+
+**Requirements:** Only Docker Desktop needs to be installed.
+
+**To stop:** `docker-compose down`
+
+### Manual Setup
+
+#### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Backend
+#### Backend
 ```bash
 cd backend
 python3.10 -m venv venv
