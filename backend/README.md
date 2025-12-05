@@ -1,27 +1,26 @@
-# LOL Match Prediction API – Frontend Guide
+# LOL Match Prediction API
 
-This project provides machine-learning–based win predictions for **League of Legends** matches.  
-Frontend developers can use this API to display:
+This backend provides machine-learning–based win predictions for **League of Legends** matches using XGBoost models.
 
-- Pick-phase win rates  
-- Mid-game win rates (10 / 15 / 20 / 25 minutes)  
-- Full-game win rates  
-- Feature importance  
-- Per-input feature contributions (why the model thinks this way)
+## Setup
 
----
-
-## Start the API
+**Requirements:** Python 3.10
 
 ```bash
-uvicorn api:app --reload
+python3.10 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Open interactive docs:
+## Running the API
 
+```bash
+python -m uvicorn api:app --reload
 ```
-http://127.0.0.1:8000/docs
-```
+
+The API will be available at: http://127.0.0.1:8000
+
+Interactive docs: http://127.0.0.1:8000/docs
 
 ---
 

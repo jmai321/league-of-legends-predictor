@@ -1,26 +1,36 @@
-export interface Champion {
-  id: string;
-  name: string;
+// Backend API Request Types
+export interface LineupRequest {
+  bot_blue: string;
+  jng_blue: string;
+  mid_blue: string;
+  sup_blue: string;
+  top_blue: string;
+  bot_red: string;
+  jng_red: string;
+  mid_red: string;
+  sup_red: string;
+  top_red: string;
 }
 
-export interface PredictionResponse {
-  blue_win_prob: number;
-  red_win_prob: number;
-  factors: FeatureFactor[];
+// Backend API Response Types
+export interface FeatureImportance {
+  feature: string;
+  importance: number;
 }
 
-export interface FeatureFactor {
-  name: string;
-  impact: number;
+export interface FeatureContribution {
+  feature: string;
+  contribution: number;
 }
 
-export interface LiveGameState {
-  game_time: number;
-  gold_diff: number;
-  dragons: string;
-  [key: string]: string | number;
+export interface LineupResponse {
+  p_blue: number;
+  p_red: number;
+  top_features: FeatureImportance[];
+  feature_contribs: FeatureContribution[];
 }
 
+// Frontend UI Types
 export interface DraftTeams {
   red_team: string[];
   blue_team: string[];
