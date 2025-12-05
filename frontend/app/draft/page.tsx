@@ -11,8 +11,8 @@ import { transformDraftToLineup } from "@/lib/transformers";
 import type { DraftTeams, LineupResponse } from "@/types";
 
 export default function DraftPredictionPage() {
-  const [redTeam, setRedTeam] = useState<string[]>(["Sion", "Lee Sin", "Ahri", "Aphelios", "Braum"]);
-  const [blueTeam, setBlueTeam] = useState<string[]>(["K'Sante", "Maokai", "Tristana", "Jinx", "Lulu"]);
+  const [redTeam, setRedTeam] = useState<string[]>(["K'Sante", "Maokai", "Tristana", "Jinx", "Lulu"]);
+  const [blueTeam, setBlueTeam] = useState<string[]>(["Sion", "Lee Sin", "Ahri", "Aphelios", "Braum"]);
   const [isLoading, setIsLoading] = useState(false);
   const [prediction, setPrediction] = useState<LineupResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
