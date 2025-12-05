@@ -50,7 +50,7 @@ All endpoints return:
 ### Example Request
 ```json
 {
-  "bot_blue": "Aphelilios",
+  "bot_blue": "Aphelios",
   "jng_blue": "LeeSin",
   "mid_blue": "Ahri",
   "sup_blue": "Thresh",
