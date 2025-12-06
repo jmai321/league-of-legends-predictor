@@ -1,8 +1,8 @@
-# LOL Match Prediction API
+# Backend - League of Legends Match Prediction API
 
-This backend provides machine-learning–based win predictions for **League of Legends** matches using XGBoost models.
+FastAPI backend providing machine learning-based win predictions for League of Legends matches using XGBoost models.
 
-## Setup
+## How to Run
 
 **Requirements:** Python 3.10
 
@@ -10,17 +10,57 @@ This backend provides machine-learning–based win predictions for **League of L
 python3.10 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-## Running the API
-
-```bash
 python -m uvicorn api:app --reload
 ```
 
 The API will be available at: http://127.0.0.1:8000
 
-Interactive docs: http://127.0.0.1:8000/docs
+Interactive API documentation: http://127.0.0.1:8000/docs
+
+## File Structure
+
+```
+backend/
+├── Dockerfile                      # Docker container configuration  
+├── README.md
+├── requirements.txt                 # Python dependencies
+├── api.py                          # Main FastAPI application
+├── model.py                        # ML model inference logic
+│
+├── graph/                          # Model performance visualizations
+│   ├── lineup_confusion_matrix.png
+│   ├── lineup_roc_tuned.png
+│   ├── realtime_confusion_matrix.png
+│   ├── realtime_mid10_confusion_matrix.png
+│   ├── realtime_mid10_roc.png
+│   ├── realtime_mid15_confusion_matrix.png
+│   ├── realtime_mid15_roc.png
+│   ├── realtime_mid20_confusion_matrix.png
+│   ├── realtime_mid20_roc.png
+│   ├── realtime_mid25_confusion_matrix.png
+│   ├── realtime_mid25_roc.png
+│   └── realtime_roc.png
+│
+└── model/                          # Trained XGBoost models
+    ├── lineup_model.joblib         # Draft prediction model
+    ├── realtime_model.joblib       # Full game prediction model
+    ├── realtime_mid10_model.joblib # 10-minute prediction model
+    ├── realtime_mid15_model.joblib # 15-minute prediction model
+    ├── realtime_mid20_model.joblib # 20-minute prediction model
+    └── realtime_mid25_model.joblib # 25-minute prediction model
+```
+
+## Third-Party Dependencies
+
+- **FastAPI 0.123.9** - Modern web framework for building APIs
+- **Uvicorn 0.38.0** - ASGI web server for running FastAPI
+- **Pydantic 2.12.5** - Data validation using Python type annotations
+- **XGBoost 3.1.2** - Gradient boosting machine learning library
+- **scikit-learn 1.2.1** - Machine learning utilities and metrics
+- **pandas 2.3.3** - Data manipulation and analysis
+- **numpy 1.24.4** - Numerical computing
+- **joblib 1.5.2** - Model serialization and loading
+- **matplotlib 3.10.7** - Plotting library (for model visualization)
 
 ---
 
