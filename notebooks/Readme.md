@@ -9,3 +9,4 @@ Please execute the cleaning pipeline and follow the Readme below:
 ```
 pip install -r requirement.txt
 ```
+### 3. Run the visualization.ipynb step by step
