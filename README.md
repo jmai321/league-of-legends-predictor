@@ -49,6 +49,15 @@ lol-win-prediction/
 ├── README.md
 ```
 
+## Detailed Setup Instructions
+
+For component-specific setup and usage details:
+
+- **[Frontend README](frontend/README.md)** - Next.js web application setup and development
+- **[Backend README](backend/README.md)** - FastAPI server configuration and API details
+- **[Pipeline README](pipeline/README.md)** - Data cleaning and model training pipeline
+- **[Notebooks README](notebooks/README.md)** - Jupyter analysis and visualization setup
+
 ## Data Source
 Raw CSVs available [here](https://drive.google.com/drive/u/0/folders/1gLSw0RLjBbtaNy0dgnGQDAZOHIgCe-HH).
 
