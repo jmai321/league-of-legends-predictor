@@ -6,7 +6,7 @@ Predict the outcome of professional League of Legends matches using machine lear
 
 ### Docker
 
-**Requirements:** Only Docker Desktop needs to be installed.
+**Requirements:** Docker Desktop (if you do not want to use docker you can run the frontend/backend individually as explained below)
 
 The easiest way to run the entire application:
 
@@ -17,8 +17,6 @@ docker-compose up --build
 ```
 
 Then visit http://localhost:3000 to use the application.
-
-**Requirements:** Only Docker Desktop needs to be installed.
 
 **To stop:** `docker-compose down`
 

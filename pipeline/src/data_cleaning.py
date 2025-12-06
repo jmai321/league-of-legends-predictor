@@ -11,7 +11,7 @@ Steps:
 8. Save results into data_clean/.
 
 To run:
-    python data_cleaning.py
+    python pipeline/src/data_cleaning.py
 """
 
 import pandas as pd
@@ -23,7 +23,7 @@ import os
 # load raw csvs
 # -----------------------------------------------------------
 
-def load_raw_csvs(path="data_raw"):
+def load_raw_csvs(path="pipeline/src/data_raw"):
     '''
     Load and combine all CSV files in the given folder.
 
