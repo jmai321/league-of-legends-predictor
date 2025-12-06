@@ -64,6 +64,9 @@ def plot_roc(y_true, y_score, title: str, save_path: str) -> None:
     save_path : str
         Path to save the ROC PNG image.
     """
+    assert y_true is not None and y_score is not None, "Input arrays cannot be None"
+    assert isinstance(title, str), "title must be a string"
+    assert isinstance(save_path, str), "save_path must be a string"
     fpr, tpr, _ = roc_curve(y_true, y_score)
     auc_val = roc_auc_score(y_true, y_score)
 
@@ -105,6 +108,10 @@ def plot_confusion_matrix(
     class_names : tuple of str, optional
         Names of the classes in order (negative, positive).
     """
+    assert y_true is not None and y_pred is not None, "Input arrays cannot be None"
+    assert isinstance(title, str), "title must be a string"
+    assert isinstance(save_path, str), "save_path must be a string"
+    assert isinstance(class_names, tuple) and len(class_names) == 2, "class_names must be tuple of 2 strings"
     cm = confusion_matrix(y_true, y_pred)
     tn, fp, fn, tp = cm.ravel()
     print(f"[CM] {title}")
@@ -258,6 +265,9 @@ class LineupXGBModel:
         y_train : pd.Series
             Training target labels.
         """
+        assert isinstance(X_train, pd.DataFrame), "X_train must be a pandas DataFrame"
+        assert isinstance(y_train, pd.Series), "y_train must be a pandas Series"
+        assert len(X_train) == len(y_train), "X_train and y_train must have same length"
         self.model.fit(X_train, y_train)
         self.fitted = True
 
@@ -276,6 +286,7 @@ class LineupXGBModel:
             Probability of Blue side winning for each row.
         """
         assert self.fitted, "Model must be fit before calling predict_proba."
+        assert isinstance(X, pd.DataFrame), "X must be a pandas DataFrame"
         return self.model.predict_proba(X)[:, 1]
 
     def predict_game(self, row: pd.Series) -> dict:
@@ -295,6 +306,7 @@ class LineupXGBModel:
                 p_red  : float
         """
         assert self.fitted, "Model must be fit before calling predict_game."
+        assert isinstance(row, pd.Series), "row must be a pandas Series"
 
         X = row[self.categorical_cols].to_frame().T
         p_blue = float(self.predict_proba(X)[0])
@@ -620,6 +632,9 @@ class RealtimeXGBModel:
         y_train : pd.Series
             Training labels.
         """
+        assert isinstance(X_train, pd.DataFrame), "X_train must be a pandas DataFrame"
+        assert isinstance(y_train, pd.Series), "y_train must be a pandas Series"
+        assert len(X_train) == len(y_train), "X_train and y_train must have same length"
         self.model.fit(X_train, y_train)
         self.fitted = True
 
@@ -638,6 +653,7 @@ class RealtimeXGBModel:
             Array of predicted win probabilities.
         """
         assert self.fitted, "Model must be fit before calling predict_proba."
+        assert isinstance(X, pd.DataFrame), "X must be a pandas DataFrame"
 
         X = X.copy()
         for col in X.columns:

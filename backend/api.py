@@ -67,6 +67,8 @@ class RealtimeGame(BaseModel):
 # =========================
 def logit(p: float) -> float:
     """Numerically-stable logit function."""
+    assert isinstance(p, (int, float)), "Input must be numeric"
+    assert 0 <= p <= 1, "Probability must be between 0 and 1"
     eps = 1e-6
     p = np.clip(p, eps, 1 - eps)
     return float(np.log(p / (1 - p)))
@@ -79,6 +81,9 @@ def get_tree_top_features(
     Extract the top N most important features from a tree model
     with feature_importances_ attribute.
     """
+    assert hasattr(model, "feature_importances_"), "Model must have feature_importances_ attribute"
+    assert isinstance(feature_cols, list), "feature_cols must be a list"
+    assert isinstance(top_n, int) and top_n > 0, "top_n must be a positive integer"
     importances = getattr(model, "feature_importances_", None)
     if importances is None:
         return []
@@ -100,6 +105,9 @@ def get_xgb_contribs_single(
 
     If the model is not XGBoost (missing get_booster), this safely returns [].
     """
+    assert isinstance(X_row, pd.DataFrame), "X_row must be a pandas DataFrame"
+    assert isinstance(feature_cols, list), "feature_cols must be a list"
+    assert isinstance(top_n, int) and top_n > 0, "top_n must be a positive integer"
     if X_row.shape[0] != 1:
         X_row = X_row.iloc[[0]]
 
@@ -184,6 +192,7 @@ def _get_lineup_inner_model_and_onehot():
 
 def get_lineup_top_features(top_n: int = 10) -> List[Dict[str, Any]]:
     """Global feature importance for one-hot encoded champion combinations."""
+    assert isinstance(top_n, int) and top_n > 0, "top_n must be a positive integer"
     onehot, model = _get_lineup_inner_model_and_onehot()
     if onehot is None or model is None:
         return []
@@ -194,6 +203,8 @@ def get_lineup_top_features(top_n: int = 10) -> List[Dict[str, Any]]:
 
 def get_lineup_top_features_filtered(item_dict: Dict[str, Any], top_n: int = 10) -> List[Dict[str, Any]]:
     """Get top features that are actually active in this specific lineup."""
+    assert isinstance(item_dict, dict), "item_dict must be a dictionary"
+    assert isinstance(top_n, int) and top_n > 0, "top_n must be a positive integer"
     onehot, model = _get_lineup_inner_model_and_onehot()
     if onehot is None or model is None:
         return []
@@ -225,6 +236,8 @@ def get_lineup_contribs_for_input(
     Compute per-input feature contributions (SHAP-like) for a single lineup,
     in one-hot encoded space.
     """
+    assert isinstance(item_dict, dict), "item_dict must be a dictionary"
+    assert isinstance(top_n, int) and top_n > 0, "top_n must be a positive integer"
     df = pd.DataFrame([item_dict], columns=lineup_categorical_cols)
     onehot, model = _get_lineup_inner_model_and_onehot()
     if onehot is None or model is None or not hasattr(model, "get_booster"):
@@ -308,6 +321,7 @@ def predict_lineup(
     - top_features: global feature importances
     - feature_contribs: per-input one-hot feature contributions
     """
+    assert req is not None, "Request body cannot be None"
     if isinstance(req, LineupItem):
         items = [req]
         single_input = True
@@ -349,6 +363,7 @@ def predict_realtime_full(
     """
     Predict winrate using full-game economic/statistical data.
     """
+    assert req is not None, "Request body cannot be None"
     if isinstance(req, RealtimeGame):
         games = [req]
         single_input = True
@@ -472,6 +487,8 @@ def predict_realtime_mid(
     """
     Predict winrate at time T (10/15/20/25 minutes).
     """
+    assert isinstance(minute, int), "minute must be an integer"
+    assert req is not None, "Request body cannot be None"
     if minute not in mid_models:
         raise HTTPException(
             status_code=404,

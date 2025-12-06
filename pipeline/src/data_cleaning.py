@@ -37,6 +37,7 @@ def load_raw_csvs(path="pipeline/src/data_raw"):
     pd.DataFrame
         combined dataframe
     '''
+    assert isinstance(path, str), "path must be a string"
     files = glob.glob(os.path.join(path, "*.csv"))
     assert len(files) > 0, "no CSV files found"
 
@@ -63,6 +64,7 @@ def standardize_columns(df):
     pd.DataFrame
         dataframe with standardized column names
     '''
+    assert isinstance(df, pd.DataFrame), "df must be a pandas DataFrame"
     df = df.copy()
     df.columns = (
         df.columns
@@ -88,6 +90,7 @@ def split_player_and_team_rows(df):
     -------
     (player_rows, team_rows)
     '''
+    assert isinstance(df, pd.DataFrame), "df must be a pandas DataFrame"
     df = df.copy()
     roles = ["top", "jng", "mid", "bot", "sup"]
 
@@ -117,6 +120,8 @@ def clean_columns(df, drop_cols):
     pd.DataFrame
         processed data frame
     '''
+    assert isinstance(df, pd.DataFrame), "df must be a pandas DataFrame"
+    assert isinstance(drop_cols, list), "drop_cols must be a list"
     
     df = df.copy()
     drop_cols = [c for c in drop_cols if c in df.columns]
@@ -144,6 +149,7 @@ def build_result_dataset(player_rows):
             top_red  ... sup_red
             win (1 if blue side won)
     '''
+    assert isinstance(player_rows, pd.DataFrame), "player_rows must be a pandas DataFrame"
     if len(player_rows) == 0:
         return pd.DataFrame()
 
@@ -291,6 +297,9 @@ def build_realtime_dataset(df, game_result):
 
 def save_outputs(game_result, realtime, path="data_clean"):
     '''Save cleaned datasets to disk.'''
+    assert isinstance(game_result, pd.DataFrame), "game_result must be a pandas DataFrame"
+    assert isinstance(realtime, pd.DataFrame), "realtime must be a pandas DataFrame"
+    assert isinstance(path, str), "path must be a string"
     os.makedirs(path, exist_ok=True)
 
     game_result.to_csv(os.path.join(path, "game_result.csv"), index=False)
